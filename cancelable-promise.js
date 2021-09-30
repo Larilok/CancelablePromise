@@ -4,9 +4,7 @@ class CancelablePromise {
       throw new Error('Expect promise argument to be a function')
 
     this.isCanceled = false
-    this.promise = new Promise((res, rej) => {
-      executor(res, rej)
-    }).catch(v => v)
+    this.promise = new Promise(executor).catch(v => v)
     this.chain = chain
     this.chain.push(this)
   }
@@ -17,22 +15,18 @@ class CancelablePromise {
       throw new Error('Expect first argument to be a function or undefined')
 
     const newPromise = new CancelablePromise((res, rej) => {
-      this.promise.then(
-        result => {
-          if (this.isCanceled) {
-            rej('Promise canceled')
+      this.promise
+        .then(
+          result => {
+            if (this.isCanceled) rej('Promise canceled')
+            else res(onFulfilled(result))
+          },
+          result => {
+            if (this.isCanceled) rej('Promise canceled')
+            else res(onRejected(result))
           }
-          if (onFulfilled && !this.isCanceled) res(onFulfilled(result))
-          else res(result)
-        },
-        result => {
-          if (this.isCanceled) {
-            rej('Promise canceled')
-          }
-          if (onRejected && !this.isCanceled) res(onRejected(result))
-          else rej(result)
-        }
-      )
+        )
+        .catch(onRejected)
     }, this.chain)
     return newPromise
   }
