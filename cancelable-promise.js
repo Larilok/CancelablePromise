@@ -6,13 +6,9 @@ class CancelablePromise {
     this.promise = new Promise(executor).catch(v =>
       console.log(`Constructor catch: ${v}`)
     )
-    console.log(`constructor`)
-    this.chain = chain
-    console.log({ raw: this.chain })
-    this.chain.push(this)
-    console.log({ push: this.chain })
     this.isCanceled = false
-    console.log(`constructor end`)
+    this.chain = chain
+    this.chain.push(this)
   }
 
   then (onFulfilled, onRejected) {
@@ -20,28 +16,27 @@ class CancelablePromise {
     if (typeof onFulfilled !== 'function' && onFulfilled !== undefined)
       throw new Error('Expect first argument to be a function or undefined')
 
-    console.log({ chain: this.chain })
     const newPromise = new CancelablePromise((res, rej) => {
-      this.promise.then(
-        result => {
-          if (this.isCanceled) {
-            for (promise in chain) promise.cancel()
-            newPromise.cancel()
-            // throw new Error('Promise canceled!')
+      this.promise
+        .then(
+          result => {
+            if (this.isCanceled) {
+              // newPromise.cancel()
+              // throw new Error('Promise canceled!')
+            }
+            if (onFulfilled && !this.isCanceled) res(onFulfilled(result))
+            else res(result)
+          },
+          result => {
+            if (this.isCanceled) {
+              // newPromise.cancel()
+              // throw new Error('Promise canceled!')
+            }
+            if (onRejected && !this.isCanceled) res(onRejected(result))
+            else rej(result)
           }
-          if (onFulfilled && !this.isCanceled) res(onFulfilled(result))
-          else res(result)
-        },
-        result => {
-          if (this.isCanceled) {
-            for (promise in chain) promise.cancel()
-            newPromise.cancel()
-            // throw new Error('Promise canceled!')
-          }
-          if (onRejected && !this.isCanceled) res(onRejected(result))
-          else rej(result)
-        }
-      )
+        )
+        .catch(v => console.log(v))
     }, this.chain)
     return newPromise
   }
@@ -52,21 +47,10 @@ class CancelablePromise {
   }
 
   cancel () {
-    this.isCanceled = true
-    // return this
+    this.chain.forEach(promise => (promise.isCanceled = true))
   }
 }
 module.exports = CancelablePromise
-
-const promise1 = new CancelablePromise(resolve => resolve(1))
-const promise2 = promise1.then(() => 2)
-
-console.log({ promise1 })
-console.log({ promise2 })
-
-promise2.cancel()
-console.log({ promise1 })
-console.log({ promise2 })
 
 // const main = async () => {
 //   let value = 0
