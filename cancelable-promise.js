@@ -8,7 +8,7 @@ class CancelablePromise {
       promise ||
       new Promise((res, rej) =>
         executor(val => {
-          if (this.isCanceled) rej('Promise canceled')
+          if (this.isCanceled) rej(this)
           res(val)
         }, rej)
       )
@@ -33,12 +33,7 @@ class CancelablePromise {
   }
 
   cancel () {
-    let i = 0
-    while (true) {
-      this.chain[i].isCanceled = true
-      if (this.chain[i] === this) break
-      i++
-    }
+    this.chain.forEach(promise => (promise.isCanceled = true))
     return this
   }
 }
