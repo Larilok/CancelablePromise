@@ -6,7 +6,7 @@ class CancelablePromise {
     this.isCanceled = false
     this.promise = new Promise((res, rej) => {
       executor(res, rej)
-    }).catch(v => console.log(v))
+    }).catch(v => v)
     this.chain = chain
     this.chain.push(this)
   }
